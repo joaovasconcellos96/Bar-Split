@@ -230,7 +230,12 @@ async function callClaude(messages, maxTokens = 1024) {
 function extrairJson(txt) {
   txt = txt.trim()
   const m = txt.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
-  return m ? m[1] : txt
+  if (m) return m[1]
+  // fallback: encontra o primeiro { ou [ e o último } ou ]
+  const start = txt.search(/[{\[]/)
+  const end   = Math.max(txt.lastIndexOf('}'), txt.lastIndexOf(']'))
+  if (start !== -1 && end !== -1) return txt.slice(start, end + 1)
+  return txt
 }
 
 // ── Estado ────────────────────────────────────────────────────────────────────
@@ -445,8 +450,8 @@ async function lerFoto(input) {
   try {
     const txt = await callClaude([{role:'user',content:[
       {type:'image',source:{type:'base64',media_type:file.type,data:b64}},
-      {type:'text',text:'Leia este cardápio e extraia todos os itens com preços. Retorne APENAS:\n{"itens":[{"nome":"...","preco":0.00,"categoria":"..."}]}'}
-    ]}], 2048)
+      {type:'text',text:'Leia este cardápio e extraia todos os itens com preços. Retorne APENAS JSON válido, sem explicações:\n{"itens":[{"nome":"...","preco":0.00,"categoria":"..."}]}'}
+    ]}], 4096)
     const data=JSON.parse(extrairJson(txt))
     if (data.itens?.length) {
       S.cardapio.push(...data.itens); save(); render()
