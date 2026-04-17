@@ -284,15 +284,20 @@ function tMesa() {
         </div>`).join('')
     : '<div class="vazio">Nenhum participante ainda</div>'
 
-  const menu = S.cardapio.length
-    ? `<div class="card">${S.cardapio.map((it,i) => `
-        <div class="card-item">
+  const menuItens = S.cardapio.length
+    ? S.cardapio.map((it,i) => `
+        <div class="card-item menu-item">
           <span class="card-nome">${it.nome}</span>
           <span class="card-preco">${fmt(it.preco)}</span>
           <button class="ico-btn" onclick="editarMenu(${i})">✏️</button>
           <button class="ico-btn" style="color:var(--muted)" onclick="rmMenu(${i})">✕</button>
-        </div>`).join('')}</div>`
+        </div>`).join('')
     : '<div class="vazio">Nenhum item — tire uma foto do cardápio!</div>'
+
+  const menuHTML = S.cardapio.length
+    ? `<input id="busca-menu" type="text" placeholder="🔍 Buscar item..." oninput="filtrarMenu()" style="margin-bottom:8px;width:100%">
+       <div class="card">${menuItens}</div>`
+    : menuItens
 
   return `
     <div class="sec">Participantes</div>
@@ -302,22 +307,22 @@ function tMesa() {
         onkeydown="if(event.key==='Enter')addP()">
       <button class="btn p" onclick="addP()">Adicionar</button>
     </div>
-    <div class="sec" style="margin-top:24px">Cardápio</div>
-    <label class="foto-btn" for="inp-foto">📷 Foto ou arquivo do cardápio</label>
-    <input id="inp-foto" type="file" accept="image/*"
-      style="display:none" onchange="lerFoto(this)">
-    ${menu}
-    <div class="row" style="margin-top:8px">
-      <input id="inp-mn" type="text" placeholder="Item..." style="flex:2">
-      <input id="inp-mp" type="number" step="0.50" placeholder="R$" style="flex:1">
-      <button class="btn s" onclick="addMenu()">＋</button>
-    </div>
     <div class="sec" style="margin-top:24px">Taxa de Serviço</div>
     <div style="display:flex;gap:8px;align-items:center">
       ${[0,10,12].map(v=>`<button class="btn ${S.taxaServico===v?'p':'s'}" onclick="setTaxa(${v})">${v===0?'Sem taxa':v+'%'}</button>`).join('')}
       <input type="number" min="0" max="50" step="1" placeholder="%" style="flex:1"
         value="${S.taxaServico||''}" onchange="setTaxa(parseFloat(this.value)||0)">
     </div>
+    <div class="sec" style="margin-top:24px">Cardápio</div>
+    <label class="foto-btn" for="inp-foto">📷 Foto ou arquivo do cardápio</label>
+    <input id="inp-foto" type="file" accept="image/*"
+      style="display:none" onchange="lerFoto(this)">
+    <div class="row" style="margin-bottom:8px">
+      <input id="inp-mn" type="text" placeholder="Item..." style="flex:2">
+      <input id="inp-mp" type="number" step="0.50" placeholder="R$" style="flex:1">
+      <button class="btn s" onclick="addMenu()">＋</button>
+    </div>
+    ${menuHTML}
     <button class="btn d full" style="margin-top:32px" onclick="confirmarReset()">🔄 Resetar mesa</button>`
 }
 
@@ -485,6 +490,14 @@ async function lerFoto(input) {
       toast(`${data.itens.length} itens importados!`)
     } else toast('Nenhum item encontrado. Tente outra foto.')
   } catch(e) { toast('Erro ao ler cardápio: '+e.message) }
+}
+
+function filtrarMenu() {
+  const q = (document.getElementById('busca-menu')?.value || '').toLowerCase().trim()
+  document.querySelectorAll('.menu-item').forEach(el => {
+    const nome = el.querySelector('.card-nome')?.textContent.toLowerCase() || ''
+    el.style.display = !q || nome.includes(q) ? '' : 'none'
+  })
 }
 
 function setTaxa(v) { S.taxaServico = v; save(); render() }
