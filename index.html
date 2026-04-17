@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0D0D0D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>BarSplit 🍺</title>
+<style>
+:root {
+  --bg:#0D0D0D; --surface:#1A1A1A; --surface2:#242424;
+  --border:rgba(255,255,255,0.08);
+  --amber:#F59E0B; --amber-dim:rgba(245,158,11,0.12);
+  --text:#F8FAFC; --muted:#6B7280;
+  --danger:#EF4444; --danger-dim:rgba(239,68,68,0.12);
+  --r:12px; --r-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto}
+
+/* Header */
+#hdr{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.logo{font-size:22px}
+#nome-sessao{flex:1;background:transparent;border:none;color:var(--text);font-size:16px;font-weight:600;outline:none}
+#nome-sessao::placeholder{color:var(--muted)}
+.hdr-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:4px;color:var(--muted)}
+
+/* Main */
+#conteudo{flex:1;overflow-y:auto;padding:16px;padding-bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+
+/* Nav */
+#nav{display:flex;background:var(--surface);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom,0px);flex-shrink:0}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;transition:color .15s}
+.tab-btn .ico{font-size:20px}
+.tab-btn.ativo{color:var(--amber)}
+
+/* Cards */
+.card{background:var(--surface);border-radius:var(--r);padding:12px;margin-bottom:8px}
+.sec{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px}
+.sec:first-child{margin-top:0}
+.vazio{text-align:center;color:var(--muted);padding:24px 0;font-size:14px}
+
+/* Inputs */
+.row{display:flex;gap:8px;margin-bottom:8px}
+input[type=text],input[type=number],input[type=password]{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:15px;outline:none}
+input:focus{border-color:var(--amber)}
+input::placeholder{color:var(--muted)}
+.btn{padding:10px 16px;border-radius:var(--r-sm);border:none;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.p{background:var(--amber);color:#000}
+.s{background:var(--surface2);color:var(--text)}
+.d{background:var(--danger-dim);color:var(--danger)}
+.full{width:100%;padding:13px}
+.ico-btn{background:none;border:none;font-size:17px;cursor:pointer;padding:4px}
+
+/* Avatar */
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#000;flex-shrink:0}
+.av-sm{width:24px;height:24px;font-size:10px}
+.avs{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+
+/* Participante */
+.p-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border-radius:var(--r-sm);margin-bottom:6px}
+.p-nome{flex:1;font-size:15px}
+
+/* Pedido */
+.pc{background:var(--surface);border-radius:var(--r);padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.pc-info{flex:1;min-width:0}
+.pc-desc{font-size:15px;font-weight:500}
+.pc-preco{font-size:16px;font-weight:700;color:var(--amber);white-space:nowrap}
+.pc-sem{font-size:12px;color:var(--danger)}
+.pc-actions{display:flex;flex-direction:column;gap:2px}
+
+/* Resumo */
+.res-total{text-align:center;padding:24px 16px;background:var(--amber-dim);border:1px solid rgba(245,158,11,.3);border-radius:var(--r);margin-bottom:16px}
+.res-label{font-size:12px;color:var(--muted);margin-bottom:4px}
+.res-valor{font-size:38px;font-weight:800;color:var(--amber)}
+.pcard{background:var(--surface);border-radius:var(--r);overflow:hidden;margin-bottom:8px}
+.pcard-hdr{display:flex;align-items:center;gap:12px;padding:12px;cursor:pointer}
+.pcard-nome{flex:1;font-size:15px;font-weight:600}
+.pcard-total{font-size:17px;font-weight:700;color:var(--amber)}
+.pcard-det{padding:0 12px 12px;display:none;border-top:1px solid var(--border)}
+.pcard-det.open{display:block}
+.det-item{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:var(--muted);border-bottom:1px solid var(--border)}
+.det-item:last-child{border-bottom:none}
+
+/* Cardápio */
+.card-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.card-item:last-child{border-bottom:none}
+.card-nome{flex:1;font-size:14px}
+.card-preco{font-size:14px;color:var(--amber);font-weight:600;min-width:64px;text-align:right}
+
+/* Foto btn */
+.foto-btn{width:100%;padding:12px;background:var(--surface2);border:1px dashed var(--border);border-radius:var(--r-sm);color:var(--muted);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
+
+/* Voz */
+.voz-btn{padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-size:18px;cursor:pointer}
+.voz-btn.rec{background:var(--danger-dim);color:var(--danger);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Modal */
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+#modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto}
+.modal-t{font-size:18px;font-weight:700;margin-bottom:16px;text-align:center}
+.modal-label{font-size:12px;color:var(--muted);margin-bottom:4px;display:block}
+
+/* Confirmação */
+.conf-item{background:var(--surface2);border-radius:var(--r-sm);padding:12px;margin-bottom:10px}
+.conf-linha{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.conf-linha:last-child{margin-bottom:0}
+.conf-key{font-size:12px;color:var(--muted)}
+.conf-val{font-size:13px;font-weight:600}
+.need-price{color:var(--danger);font-size:12px;margin-bottom:4px}
+.price-inp{width:100%;background:var(--surface);border:1px solid var(--danger);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-size:15px;outline:none}
+.price-inp:focus{border-color:var(--amber)}
+
+/* Tags */
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 14px}
+.tag{padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;background:var(--surface2);color:var(--muted);border:1px solid var(--border);user-select:none}
+.tag.on{background:var(--amber-dim);color:var(--amber);border-color:rgba(245,158,11,.4)}
+
+/* API key banner */
+#api-banner{background:var(--danger-dim);border-bottom:1px solid rgba(239,68,68,.3);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--danger);flex-shrink:0}
+
+/* Toast */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);padding:9px 18px;border-radius:20px;font-size:13px;z-index:200;white-space:nowrap;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+
+/* Spinner */
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:rot .7s linear infinite;vertical-align:middle}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hdr">
+    <span class="logo">🍺</span>
+    <input id="nome-sessao" type="text" placeholder="Nome da mesa...">
+    <button class="hdr-btn" onclick="confirmarReset()" title="Resetar mesa">🔄</button>
+    <button class="hdr-btn" onclick="abrirConfig()" title="Configurações">⚙️</button>
+  </header>
+  <div id="api-banner" style="display:none">
+    ⚠️ API key não configurada
+    <button class="btn p" style="padding:5px 12px;font-size:12px" onclick="abrirConfig()">Configurar</button>
+  </div>
+  <main id="conteudo"></main>
+  <nav id="nav">
+    <button class="tab-btn" data-tab="mesa"    onclick="ir('mesa')">   <span class="ico">🍽️</span>Mesa</button>
+    <button class="tab-btn" data-tab="pedidos" onclick="ir('pedidos')"><span class="ico">🍺</span>Pedidos</button>
+    <button class="tab-btn" data-tab="resumo"  onclick="ir('resumo')"> <span class="ico">💰</span>Resumo</button>
+  </nav>
+</div>
+<div id="overlay" style="display:none" onclick="overlayClick(event)">
+  <div id="modal"></div>
+</div>
+<div id="toast" style="display:none"></div>
+
+<script>
+// ── API key ───────────────────────────────────────────────────────────────────
+const API_KEY_K = 'barsplit_apikey'
+function getKey()     { return localStorage.getItem(API_KEY_K) || '' }
+function setKey(k)    { localStorage.setItem(API_KEY_K, k.trim()) }
+
+function abrirConfig() {
+  const k = getKey()
+  modal(`
+    <div class="modal-t">⚙️ Configurações</div>
+    <label class="modal-label">Anthropic API Key</label>
+    <div class="row" style="margin-bottom:6px">
+      <input id="inp-key" type="password" placeholder="sk-ant-..." value="${k}" style="flex:1">
+      <button class="btn s" onclick="toggleKey()" style="padding:10px 12px">👁️</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.5">
+      A chave fica salva só neste browser (localStorage). Nunca sai do seu dispositivo.
+    </p>
+    <div style="display:flex;gap:8px">
+      <button class="btn s" style="flex:1" onclick="fecharModal()">Cancelar</button>
+      <button class="btn p" style="flex:1" onclick="salvarKey()">Salvar</button>
+    </div>`)
+}
+
+function toggleKey() {
+  const el = document.getElementById('inp-key')
+  el.type = el.type === 'password' ? 'text' : 'password'
+}
+
+function salvarKey() {
+  const k = document.getElementById('inp-key').value.trim()
+  if (!k.startsWith('sk-ant-')) { toast('Chave inválida — deve começar com sk-ant-'); return }
+  setKey(k)
+  fecharModal()
+  verificarKey()
+  toast('API key salva!')
+}
+
+function verificarKey() {
+  const banner = document.getElementById('api-banner')
+  banner.style.display = getKey() ? 'none' : 'flex'
+}
+
+// ── Claude API (direto do browser) ───────────────────────────────────────────
+async function callClaude(messages, maxTokens = 1024) {
+  const key = getKey()
+  if (!key) { abrirConfig(); throw new Error('API key não configurada') }
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: maxTokens, messages })
+  })
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}))
+    const msg = err.error?.message || `Erro ${resp.status}`
+    if (resp.status === 401) { toast('API key inválida — verifique nas configurações'); abrirConfig() }
+    throw new Error(msg)
+  }
+
+  const data = await resp.json()
+  return data.content[0].text
+}
+
+function extrairJson(txt) {
+  txt = txt.trim()
+  const m = txt.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+  return m ? m[1] : txt
+}
+
+// ── Estado ────────────────────────────────────────────────────────────────────
+const CORES = ['#F59E0B','#10B981','#3B82F6','#EC4899','#8B5CF6','#EF4444','#06B6D4','#F97316','#84CC16']
+const KEY   = 'barsplit_v2'
+
+function novoEstado() {
+  return { sessao:{nome:'Mesa — '+new Date().toLocaleDateString('pt-BR')}, participantes:[], pedidos:[], cardapio:[], tab:'mesa' }
+}
+let S = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || novoEstado() } catch { return novoEstado() } })()
+function save() { localStorage.setItem(KEY, JSON.stringify(S)) }
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+const uid  = () => Math.random().toString(36).substr(2,9)
+const fmt  = v  => 'R$ '+(v||0).toFixed(2).replace('.',',')
+const getP = id => S.participantes.find(p => p.id === id)
+
+function encontrarParticipante(nome) {
+  const n = nome.toLowerCase().trim()
+  return S.participantes.find(p =>
+    p.nome.toLowerCase() === n ||
+    p.nome.toLowerCase().startsWith(n) ||
+    n.startsWith(p.nome.toLowerCase().split(' ')[0])
+  )
+}
+
+// ── Navegação ─────────────────────────────────────────────────────────────────
+function ir(tab) { S.tab = tab; save(); render() }
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  document.getElementById('conteudo').innerHTML = ({mesa:tMesa,pedidos:tPedidos,resumo:tResumo})[S.tab]()
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('ativo', b.dataset.tab === S.tab))
+  const ns = document.getElementById('nome-sessao')
+  if (ns) ns.value = S.sessao.nome
+}
+
+// ── Tab Mesa ──────────────────────────────────────────────────────────────────
+function tMesa() {
+  const parts = S.participantes.length
+    ? S.participantes.map(p => `
+        <div class="p-row">
+          <div class="av" style="background:${p.cor}">${p.nome[0].toUpperCase()}</div>
+          <span class="p-nome">${p.nome}</span>
+          <button class="ico-btn" onclick="rmP('${p.id}')">✕</button>
+        </div>`).join('')
+    : '<div class="vazio">Nenhum participante ainda</div>'
+
+  const menu = S.cardapio.length
+    ? `<div class="card">${S.cardapio.map((it,i) => `
+        <div class="card-item">
+          <span class="card-nome">${it.nome}</span>
+          <span class="card-preco">${fmt(it.preco)}</span>
+          <button class="ico-btn" style="color:var(--muted)" onclick="rmMenu(${i})">✕</button>
+        </div>`).join('')}</div>`
+    : '<div class="vazio">Nenhum item — tire uma foto do cardápio!</div>'
+
+  return `
+    <div class="sec">Participantes</div>
+    ${parts}
+    <div class="row" style="margin-top:8px">
+      <input id="inp-p" type="text" placeholder="Nome do participante..."
+        onkeydown="if(event.key==='Enter')addP()">
+      <button class="btn p" onclick="addP()">Adicionar</button>
+    </div>
+    <div class="sec" style="margin-top:24px">Cardápio</div>
+    <label class="foto-btn" for="inp-foto">📷 Tirar foto do cardápio</label>
+    <input id="inp-foto" type="file" accept="image/*" capture="environment"
+      style="display:none" onchange="lerFoto(this)">
+    ${menu}
+    <div class="row" style="margin-top:8px">
+      <input id="inp-mn" type="text" placeholder="Item..." style="flex:2">
+      <input id="inp-mp" type="number" step="0.50" placeholder="R$" style="flex:1">
+      <button class="btn s" onclick="addMenu()">＋</button>
+    </div>
+    <button class="btn d full" style="margin-top:32px" onclick="confirmarReset()">🔄 Resetar mesa</button>`
+}
+
+// ── Tab Pedidos ───────────────────────────────────────────────────────────────
+function tPedidos() {
+  const lista = S.pedidos.length
+    ? S.pedidos.map(p => {
+        const avs = p.participantes.map(id=>getP(id)).filter(Boolean)
+          .map(pp=>`<div class="av av-sm" style="background:${pp.cor}" title="${pp.nome}">${pp.nome[0].toUpperCase()}</div>`).join('')
+        const total = (p.preco||0)*(p.quantidade||1)
+        return `
+          <div class="pc">
+            <div class="pc-info">
+              <div class="pc-desc">${p.descricao}${p.quantidade>1?` <span style="color:var(--muted)">×${p.quantidade}</span>`:''}</div>
+              <div class="avs" style="margin-top:6px">${avs||'<span style="font-size:11px;color:var(--danger)">Sem participante</span>'}</div>
+            </div>
+            ${p.preco?`<div class="pc-preco">${fmt(total)}</div>`:`<div class="pc-sem">sem preço</div>`}
+            <div class="pc-actions">
+              <button class="ico-btn" onclick="formManual('${p.id}')">✏️</button>
+              <button class="ico-btn" onclick="rmPed('${p.id}')">🗑️</button>
+            </div>
+          </div>`}).join('')
+    : '<div class="vazio">Nenhum pedido ainda<br><small>Use o campo abaixo para lançar</small></div>'
+
+  const total = S.pedidos.reduce((a,p)=>a+(p.preco||0)*(p.quantidade||1),0)
+  return `
+    <div class="card" style="margin-bottom:16px">
+      <div class="row" style="margin-bottom:8px">
+        <input id="inp-ped" type="text"
+          placeholder="ex: dois chopps pro Rafael e André..."
+          onkeydown="if(event.key==='Enter')lancar()" style="font-size:14px">
+        <button class="voz-btn" id="btn-voz" onclick="toggleVoz()">🎤</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn p" style="flex:1" onclick="lancar()">Lançar</button>
+        <button class="btn s" onclick="formManual(null)">Manual</button>
+      </div>
+    </div>
+    ${S.pedidos.length?`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="sec" style="margin:0">${S.pedidos.length} pedido(s)</div>
+      <div style="font-size:13px;color:var(--amber)">${fmt(total)}</div></div>`:''}
+    ${lista}`
+}
+
+// ── Tab Resumo ────────────────────────────────────────────────────────────────
+function tResumo() {
+  if (!S.participantes.length)
+    return '<div class="vazio" style="padding-top:60px">Adicione participantes na aba Mesa</div>'
+  const split = calcSplit()
+  const total = Object.values(split).reduce((a,b)=>a+b,0)
+  const semP  = S.pedidos.some(p=>!p.preco)
+  const cards = [...S.participantes].sort((a,b)=>(split[b.id]||0)-(split[a.id]||0)).map(p => {
+    const itens = itensPP(p.id)
+    const dets = itens.length
+      ? itens.map(it=>`<div class="det-item"><span>${it.desc}${it.qtd>1?` ×${it.qtd}`:''}</span><span>${fmt(it.val)}</span></div>`).join('')
+      : '<div style="color:var(--muted);font-size:13px;padding:6px 0">Nenhum item</div>'
+    return `
+      <div class="pcard">
+        <div class="pcard-hdr" onclick="toggleDet('det-${p.id}')">
+          <div class="av" style="background:${p.cor}">${p.nome[0].toUpperCase()}</div>
+          <span class="pcard-nome">${p.nome}</span>
+          <span class="pcard-total">${fmt(split[p.id]||0)}</span>
+        </div>
+        <div class="pcard-det" id="det-${p.id}">${dets}</div>
+      </div>`}).join('')
+  return `
+    <div class="res-total">
+      <div class="res-label">Total da mesa</div>
+      <div class="res-valor">${fmt(total)}</div>
+      ${semP?'<div style="font-size:12px;color:var(--danger);margin-top:4px">⚠️ Há itens sem preço</div>':''}
+    </div>
+    ${cards}
+    <button class="btn s full" onclick="compartilhar()" style="margin-top:8px">📤 Compartilhar resumo</button>`
+}
+
+// ── Cálculo ───────────────────────────────────────────────────────────────────
+function calcSplit() {
+  const t = {}
+  S.participantes.forEach(p => t[p.id]=0)
+  S.pedidos.forEach(p => {
+    if (!p.preco || !p.participantes.length) return
+    const pp = (p.preco*(p.quantidade||1))/p.participantes.length
+    p.participantes.forEach(id => { if (id in t) t[id]+=pp })
+  })
+  return t
+}
+function itensPP(pid) {
+  return S.pedidos.filter(p=>p.participantes.includes(pid)&&p.preco)
+    .map(p=>({desc:p.descricao,qtd:p.quantidade||1,val:(p.preco*(p.quantidade||1))/p.participantes.length}))
+}
+
+// ── Mesa ──────────────────────────────────────────────────────────────────────
+function addP() {
+  const el=document.getElementById('inp-p'),nome=el.value.trim()
+  if (!nome) return
+  S.participantes.push({id:uid(),nome,cor:CORES[S.participantes.length%CORES.length]})
+  el.value=''; save(); render()
+}
+function rmP(id) {
+  S.participantes=S.participantes.filter(p=>p.id!==id)
+  S.pedidos.forEach(p=>p.participantes=p.participantes.filter(pid=>pid!==id))
+  save(); render()
+}
+function addMenu() {
+  const n=document.getElementById('inp-mn').value.trim()
+  const p=parseFloat(document.getElementById('inp-mp').value)
+  if (!n||isNaN(p)) return
+  S.cardapio.push({nome:n,preco:p})
+  document.getElementById('inp-mn').value=''
+  document.getElementById('inp-mp').value=''
+  save(); render()
+}
+function rmMenu(i) { S.cardapio.splice(i,1); save(); render() }
+
+async function lerFoto(input) {
+  if (!input.files[0]) return
+  const file=input.files[0]
+  toast('Lendo cardápio...')
+  const b64=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.readAsDataURL(file)})
+  try {
+    const txt = await callClaude([{role:'user',content:[
+      {type:'image',source:{type:'base64',media_type:file.type,data:b64}},
+      {type:'text',text:'Leia este cardápio e extraia todos os itens com preços. Retorne APENAS:\n{"itens":[{"nome":"...","preco":0.00,"categoria":"..."}]}'}
+    ]}], 2048)
+    const data=JSON.parse(extrairJson(txt))
+    if (data.itens?.length) {
+      S.cardapio.push(...data.itens); save(); render()
+      toast(`${data.itens.length} itens importados!`)
+    } else toast('Nenhum item encontrado. Tente outra foto.')
+  } catch(e) { toast('Erro ao ler cardápio: '+e.message) }
+}
+
+function confirmarReset() {
+  modal(`<div class="modal-t">Resetar mesa?</div>
+    <p style="text-align:center;color:var(--muted);font-size:14px;margin-bottom:20px">Todos os participantes e pedidos serão apagados.</p>
+    <div style="display:flex;gap:8px">
+      <button class="btn s" style="flex:1" onclick="fecharModal()">Cancelar</button>
+      <button class="btn d" style="flex:1" onclick="resetar()">Resetar</button>
+    </div>`)
+}
+function resetar() { S=novoEstado(); save(); fecharModal(); render() }
+
+// ── Pedidos ───────────────────────────────────────────────────────────────────
+async function lancar() {
+  const el=document.getElementById('inp-ped'),texto=el.value.trim()
+  if (!texto) { formManual(null); return }
+  if (!S.participantes.length) { toast('Adicione participantes primeiro!'); return }
+
+  el.disabled=true; el.placeholder='Interpretando...'
+  try {
+    const nomes=S.participantes.map(p=>p.nome)
+    const menuTxt=S.cardapio.length
+      ? S.cardapio.map(i=>`- ${i.nome}: R$ ${i.preco.toFixed(2)}`).join('\n')
+      : 'Sem cardápio cadastrado'
+    const prompt=`Interprete o pedido de bar e retorne JSON.
+
+Participantes: ${nomes.join(', ')}
+Cardápio:\n${menuTxt}
+Pedido: "${texto}"
+
+Regras:
+- "pra geral" → todos; "menos o X" → todos exceto X
+- "uma rodada" → quantidade = nº de pessoas mencionadas
+- "dois chopps pro A e B" → quantidade=2, participantes=[A,B] (cada um bebe o seu)
+- "porção pra dividir" → quantidade=1, participantes=[todos mencionados]
+- Use preço do cardápio se disponível, senão null
+
+Retorne APENAS:
+{"pedidos":[{"descricao":"nome","preco":valor_ou_null,"quantidade":1,"participantes":["nome1"]}]}`
+
+    const txt=await callClaude([{role:'user',content:prompt}])
+    const data=JSON.parse(extrairJson(txt))
+    if (data.pedidos?.length) { el.value=''; confirmarPedidos(data.pedidos) }
+    else { toast('Não entendi. Tente o modo manual.'); formManual(null) }
+  } catch(e) {
+    if (!e.message.includes('API key')) { toast('Erro: '+e.message); formManual(null) }
+  } finally {
+    el.disabled=false; el.placeholder='ex: dois chopps pro Rafael e André...'
+  }
+}
+
+function confirmarPedidos(nlp) {
+  const pedidos=nlp.map(p=>({...p,_ids:(p.participantes||[]).map(n=>encontrarParticipante(n)).filter(Boolean).map(pp=>pp.id)}))
+  window._pend=pedidos
+  const html=pedidos.map((p,i)=>{
+    const avs=p._ids.map(id=>getP(id)).filter(Boolean)
+      .map(pp=>`<div class="av av-sm" style="background:${pp.cor}">${pp.nome[0].toUpperCase()}</div>`).join('')
+    return `
+      <div class="conf-item">
+        <div class="conf-linha">
+          <span style="font-size:15px;font-weight:600">${p.descricao}</span>
+          ${p.quantidade>1?`<span style="color:var(--muted)">×${p.quantidade}</span>`:''}
+        </div>
+        <div class="conf-linha">
+          <span class="conf-key">Participantes</span>
+          <div class="avs">${avs||'<span style="font-size:12px;color:var(--danger)">Não mapeado</span>'}</div>
+        </div>
+        ${p.preco
+          ?`<div class="conf-linha"><span class="conf-key">Total</span><span class="conf-val" style="color:var(--amber)">${fmt(p.preco*(p.quantidade||1))}</span></div>`
+          :`<div><div class="need-price">⚠️ Preço desconhecido — informe:</div>
+             <input class="price-inp" type="number" step="0.50" placeholder="R$ por unidade"
+               onchange="window._pend[${i}].preco=parseFloat(this.value)||null"></div>`}
+      </div>`}).join('')
+  modal(`<div class="modal-t">Confirmar pedido</div>${html}
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn s" style="flex:1" onclick="fecharModal()">Cancelar</button>
+      <button class="btn p" style="flex:1" onclick="salvarPend()">✅ Confirmar</button>
+    </div>`)
+}
+
+function salvarPend() {
+  const pend=window._pend||[]
+  if (pend.some(p=>!p.preco)) { toast('Informe o preço dos itens marcados'); return }
+  pend.forEach(p=>S.pedidos.unshift({id:uid(),descricao:p.descricao,preco:p.preco||null,quantidade:p.quantidade||1,participantes:p._ids||[]}))
+  save(); fecharModal(); ir('pedidos')
+  toast(`${pend.length} item(s) adicionado(s)!`)
+}
+
+function rmPed(id) { S.pedidos=S.pedidos.filter(p=>p.id!==id); save(); render() }
+
+// ── Form manual ───────────────────────────────────────────────────────────────
+function formManual(pedidoId) {
+  const p=pedidoId?S.pedidos.find(x=>x.id===pedidoId):null
+  const tags=S.participantes.map(pp=>{
+    const on=p?p.participantes.includes(pp.id):true
+    return `<div class="tag ${on?'on':''}" onclick="this.classList.toggle('on')" data-id="${pp.id}">${pp.nome}</div>`
+  }).join('')
+  modal(`<div class="modal-t">${p?'Editar':'Novo'} pedido</div>
+    <label class="modal-label">Descrição</label>
+    <div class="row" style="margin-bottom:12px">
+      <input id="m-desc" type="text" placeholder="ex: Chopp, Porção de fritas..." value="${p?p.descricao:''}">
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <div style="flex:1"><label class="modal-label">Preço unitário</label>
+        <div class="row" style="margin:0"><input id="m-preco" type="number" step="0.50" placeholder="R$" value="${p?.preco||''}"></div></div>
+      <div style="flex:1"><label class="modal-label">Quantidade</label>
+        <div class="row" style="margin:0"><input id="m-qtd" type="number" min="1" placeholder="1" value="${p?.quantidade||1}"></div></div>
+    </div>
+    <label class="modal-label">Participantes</label>
+    <div class="tags">${tags}</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn s" style="flex:1" onclick="fecharModal()">Cancelar</button>
+      <button class="btn p" style="flex:1" onclick="salvarManual('${pedidoId||''}')">${p?'Salvar':'Adicionar'}</button>
+    </div>`)
+}
+
+function salvarManual(pedidoId) {
+  const desc=document.getElementById('m-desc').value.trim()
+  const preco=parseFloat(document.getElementById('m-preco').value)||null
+  const qtd=parseInt(document.getElementById('m-qtd').value)||1
+  const parts=[...document.querySelectorAll('.tag.on')].map(el=>el.dataset.id)
+  if (!desc) { toast('Informe a descrição'); return }
+  if (pedidoId) {
+    const idx=S.pedidos.findIndex(p=>p.id===pedidoId)
+    if (idx>=0) S.pedidos[idx]={...S.pedidos[idx],descricao:desc,preco,quantidade:qtd,participantes:parts}
+  } else { S.pedidos.unshift({id:uid(),descricao:desc,preco,quantidade:qtd,participantes:parts}) }
+  save(); fecharModal(); ir('pedidos')
+}
+
+// ── Voz ───────────────────────────────────────────────────────────────────────
+let _rec=null,_grav=false
+function toggleVoz() {
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition
+  if (!SR) { toast('Voz não suportada neste browser'); return }
+  if (_grav) { _rec?.stop(); return }
+  _rec=new SR(); _rec.lang='pt-BR'; _rec.continuous=false; _rec.interimResults=false
+  _rec.onresult=e=>{
+    const txt=e.results[0][0].transcript
+    const el=document.getElementById('inp-ped')
+    if (el) { el.value=txt; lancar() }
+    _grav=false; document.getElementById('btn-voz')?.classList.remove('rec')
+  }
+  _rec.onerror=_rec.onend=()=>{ _grav=false; document.getElementById('btn-voz')?.classList.remove('rec') }
+  _rec.start(); _grav=true; document.getElementById('btn-voz')?.classList.add('rec')
+  toast('Ouvindo...')
+}
+
+// ── Resumo ────────────────────────────────────────────────────────────────────
+function toggleDet(id) { document.getElementById(id)?.classList.toggle('open') }
+
+async function compartilhar() {
+  const split=calcSplit(),total=Object.values(split).reduce((a,b)=>a+b,0)
+  let txt=`🍺 ${S.sessao.nome}\n\n`
+  ;[...S.participantes].sort((a,b)=>(split[b.id]||0)-(split[a.id]||0)).forEach(p=>txt+=`${p.nome}: ${fmt(split[p.id]||0)}\n`)
+  txt+=`\nTotal: ${fmt(total)}`
+  try {
+    if (navigator.share) await navigator.share({title:'BarSplit',text:txt})
+    else { await navigator.clipboard.writeText(txt); toast('Copiado!') }
+  } catch { toast('Erro ao compartilhar') }
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function modal(html) { document.getElementById('modal').innerHTML=html; document.getElementById('overlay').style.display='flex' }
+function fecharModal() { document.getElementById('overlay').style.display='none'; window._pend=null }
+function overlayClick(e) { if (e.target.id==='overlay') fecharModal() }
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let _tt=null
+function toast(msg) {
+  const el=document.getElementById('toast')
+  el.textContent=msg; el.style.display='block'
+  clearTimeout(_tt); _tt=setTimeout(()=>el.style.display='none',2500)
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.getElementById('nome-sessao').addEventListener('input',e=>{ S.sessao.nome=e.target.value; save() })
+verificarKey()
+render()
+</script>
+</body>
+</html>
