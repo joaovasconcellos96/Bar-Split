@@ -238,7 +238,7 @@ const CORES = ['#F59E0B','#10B981','#3B82F6','#EC4899','#8B5CF6','#EF4444','#06B
 const KEY   = 'barsplit_v2'
 
 function novoEstado() {
-  return { sessao:{nome:'Mesa — '+new Date().toLocaleDateString('pt-BR')}, participantes:[], pedidos:[], cardapio:[], tab:'mesa' }
+  return { sessao:{nome:'Mesa — '+new Date().toLocaleDateString('pt-BR')}, participantes:[], pedidos:[], cardapio:[], taxaServico:0, tab:'mesa' }
 }
 let S = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || novoEstado() } catch { return novoEstado() } })()
 function save() { localStorage.setItem(KEY, JSON.stringify(S)) }
@@ -297,14 +297,20 @@ function tMesa() {
       <button class="btn p" onclick="addP()">Adicionar</button>
     </div>
     <div class="sec" style="margin-top:24px">Cardápio</div>
-    <label class="foto-btn" for="inp-foto">📷 Tirar foto do cardápio</label>
-    <input id="inp-foto" type="file" accept="image/*" capture="environment"
+    <label class="foto-btn" for="inp-foto">📷 Foto ou arquivo do cardápio</label>
+    <input id="inp-foto" type="file" accept="image/*"
       style="display:none" onchange="lerFoto(this)">
     ${menu}
     <div class="row" style="margin-top:8px">
       <input id="inp-mn" type="text" placeholder="Item..." style="flex:2">
       <input id="inp-mp" type="number" step="0.50" placeholder="R$" style="flex:1">
       <button class="btn s" onclick="addMenu()">＋</button>
+    </div>
+    <div class="sec" style="margin-top:24px">Taxa de Serviço</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      ${[0,10,12].map(v=>`<button class="btn ${S.taxaServico===v?'p':'s'}" onclick="setTaxa(${v})">${v===0?'Sem taxa':v+'%'}</button>`).join('')}
+      <input type="number" min="0" max="50" step="1" placeholder="%" style="flex:1"
+        value="${S.taxaServico||''}" onchange="setTaxa(parseFloat(this.value)||0)">
     </div>
     <button class="btn d full" style="margin-top:32px" onclick="confirmarReset()">🔄 Resetar mesa</button>`
 }
@@ -354,27 +360,38 @@ function tPedidos() {
 function tResumo() {
   if (!S.participantes.length)
     return '<div class="vazio" style="padding-top:60px">Adicione participantes na aba Mesa</div>'
-  const split = calcSplit()
-  const total = Object.values(split).reduce((a,b)=>a+b,0)
-  const semP  = S.pedidos.some(p=>!p.preco)
+  const split    = calcSplit()
+  const subtotal = Object.values(split).reduce((a,b)=>a+b,0)
+  const taxa     = S.taxaServico || 0
+  const taxaVal  = subtotal * taxa / 100
+  const total    = subtotal + taxaVal
+  const fator    = 1 + taxa / 100
+  const semP     = S.pedidos.some(p=>!p.preco)
+
   const cards = [...S.participantes].sort((a,b)=>(split[b.id]||0)-(split[a.id]||0)).map(p => {
     const itens = itensPP(p.id)
     const dets = itens.length
       ? itens.map(it=>`<div class="det-item"><span>${it.desc}${it.qtd>1?` ×${it.qtd}`:''}</span><span>${fmt(it.val)}</span></div>`).join('')
       : '<div style="color:var(--muted);font-size:13px;padding:6px 0">Nenhum item</div>'
+    const totalPessoa = (split[p.id]||0) * fator
     return `
       <div class="pcard">
         <div class="pcard-hdr" onclick="toggleDet('det-${p.id}')">
           <div class="av" style="background:${p.cor}">${p.nome[0].toUpperCase()}</div>
           <span class="pcard-nome">${p.nome}</span>
-          <span class="pcard-total">${fmt(split[p.id]||0)}</span>
+          <span class="pcard-total">${fmt(totalPessoa)}</span>
         </div>
-        <div class="pcard-det" id="det-${p.id}">${dets}</div>
+        <div class="pcard-det" id="det-${p.id}">
+          ${dets}
+          ${taxa>0?`<div class="det-item" style="color:var(--amber)"><span>Taxa de serviço (${taxa}%)</span><span>${fmt((split[p.id]||0)*taxa/100)}</span></div>`:''}
+        </div>
       </div>`}).join('')
+
   return `
     <div class="res-total">
       <div class="res-label">Total da mesa</div>
       <div class="res-valor">${fmt(total)}</div>
+      ${taxa>0?`<div style="font-size:12px;color:var(--muted);margin-top:4px">Subtotal ${fmt(subtotal)} + taxa ${fmt(taxaVal)}</div>`:''}
       ${semP?'<div style="font-size:12px;color:var(--danger);margin-top:4px">⚠️ Há itens sem preço</div>':''}
     </div>
     ${cards}
@@ -437,6 +454,8 @@ async function lerFoto(input) {
     } else toast('Nenhum item encontrado. Tente outra foto.')
   } catch(e) { toast('Erro ao ler cardápio: '+e.message) }
 }
+
+function setTaxa(v) { S.taxaServico = v; save(); render() }
 
 function confirmarReset() {
   modal(`<div class="modal-t">Resetar mesa?</div>
@@ -518,7 +537,6 @@ function confirmarPedidos(nlp) {
 
 function salvarPend() {
   const pend=window._pend||[]
-  if (pend.some(p=>!p.preco)) { toast('Informe o preço dos itens marcados'); return }
   pend.forEach(p=>S.pedidos.unshift({id:uid(),descricao:p.descricao,preco:p.preco||null,quantidade:p.quantidade||1,participantes:p._ids||[]}))
   save(); fecharModal(); ir('pedidos')
   toast(`${pend.length} item(s) adicionado(s)!`)
@@ -587,9 +605,15 @@ function toggleVoz() {
 function toggleDet(id) { document.getElementById(id)?.classList.toggle('open') }
 
 async function compartilhar() {
-  const split=calcSplit(),total=Object.values(split).reduce((a,b)=>a+b,0)
+  const split=calcSplit()
+  const subtotal=Object.values(split).reduce((a,b)=>a+b,0)
+  const taxa=S.taxaServico||0
+  const fator=1+taxa/100
+  const total=subtotal*fator
   let txt=`🍺 ${S.sessao.nome}\n\n`
-  ;[...S.participantes].sort((a,b)=>(split[b.id]||0)-(split[a.id]||0)).forEach(p=>txt+=`${p.nome}: ${fmt(split[p.id]||0)}\n`)
+  ;[...S.participantes].sort((a,b)=>(split[b.id]||0)-(split[a.id]||0))
+    .forEach(p=>txt+=`${p.nome}: ${fmt((split[p.id]||0)*fator)}\n`)
+  if (taxa>0) txt+=`\nSubtotal: ${fmt(subtotal)}\nTaxa (${taxa}%): ${fmt(subtotal*taxa/100)}`
   txt+=`\nTotal: ${fmt(total)}`
   try {
     if (navigator.share) await navigator.share({title:'BarSplit',text:txt})
